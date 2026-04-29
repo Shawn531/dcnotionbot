@@ -210,9 +210,11 @@ _TIMESTAMP_FB = re.compile(
     r"^\d+\s*(秒|分鐘|小時|天|週|個月|年)(前)?$|^剛剛$|^\d+[smhdw]$"
 )
 
-# Group post timestamp: "4月15日下午12:41", "昨天上午9:00", "今天", etc.
+# Group post timestamp: "4月15日下午12:41", "April 15 at 12:41 PM", etc.
 _TIMESTAMP_FB_POST = re.compile(
     r"^\d+月\d+日|^昨天[上下]午|^今天[上下]午"
+    r"|^(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d+"
+    r"|^\w+ \d+ at \d+:\d+"
 )
 
 

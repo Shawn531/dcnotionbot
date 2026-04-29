@@ -73,6 +73,7 @@ async def _process(client: httpx.AsyncClient, msg: dict) -> bool:
 
     url = urls[0]
     title, article_content, images = await get_page_info(url)
+    print(f"[debug] url={url} title={title!r} content_len={len(article_content)} images={len(images)}")
     notion_url = create_article_page(title, url, all_tags, article_content, images)
     await _send_reply(client, msg["id"], f"✅ 文章已存入 Notion\n{notion_url}")
     return True
