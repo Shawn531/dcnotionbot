@@ -94,6 +94,7 @@ async def main() -> None:
             if msg["author"].get("bot"):
                 continue
             if _is_processed(msg):
+                print(f"Skipping already processed message {msg['id']}")
                 continue
 
             try:

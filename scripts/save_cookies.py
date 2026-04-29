@@ -14,11 +14,16 @@ async def main():
         print("請在瀏覽器視窗登入 Threads，登入完成後回到這裡按 Enter...")
         input()
 
+        await page.goto("https://www.facebook.com/login")
+        print("請在瀏覽器視窗登入 Facebook，登入完成後回到這裡按 Enter...")
+        input()
+
         cookies = await context.cookies()
         with open(COOKIE_FILE, "w", encoding="utf-8") as f:
             json.dump(cookies, f)
 
         await browser.close()
-        print(f"Cookie 已儲存到 {COOKIE_FILE}（共 {len(cookies)} 筆）")
+        domains = set(c.get("domain", "") for c in cookies)
+        print(f"Cookie 已儲存到 {COOKIE_FILE}（共 {len(cookies)} 筆，網域：{domains}）")
 
 asyncio.run(main())
