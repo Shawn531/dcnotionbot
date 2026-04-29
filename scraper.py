@@ -167,7 +167,11 @@ def _extract_thread_posts(body: str, author: str) -> str:
 def _extract_facebook_post(body: str) -> str:
     """Extract post content from Facebook page body text."""
     _STOP = {"所有心情：", "讚", "留言", "分享", "最相關", "最新", "所有留言"}
-    _SKIP = {"登入", "忘記帳號？", "建立新帳號", "·", " ", "加入", "追蹤", "或", "忘記密碼？"}
+    _SKIP = {
+        "登入", "忘記帳號？", "建立新帳號", "·", " ", "加入", "追蹤", "或",
+        "忘記密碼？", "Log in", "Forgot account?", "Create new account",
+        "Sign Up", "Log In", "See more", "Follow", "Join",
+    }
 
     lines = body.splitlines()
     collecting = False
@@ -178,14 +182,17 @@ def _extract_facebook_post(body: str) -> str:
         if not line:
             continue
 
+        if line in _STOP or line.startswith("所有心情") or line.startswith("All reactions"):
+            break
+
         # Start marker 1: page post ("X 的貼文")
         if not collecting and line.endswith("的貼文"):
             _SKIP.add(line[:-3].strip())
             collecting = True
             continue
 
-        # Start marker 2: group post — first date timestamp (e.g. "4月15日下午12:41")
-        if not collecting and _TIMESTAMP_FB_POST.match(line):
+        # Start marker 2: group post — date timestamp (Chinese or English)
+        if not collecting and (_TIMESTAMP_FB_POST.match(line) or _TIMESTAMP_FB_POST_EN.match(line)):
             collecting = True
             continue
 
@@ -195,13 +202,22 @@ def _extract_facebook_post(body: str) -> str:
         if line in _SKIP:
             continue
 
-        if line in _STOP or line.startswith("所有心情"):
-            break
-
-        if _TIMESTAMP_FB.match(line) or _TIMESTAMP_FB_POST.match(line):
+        if _TIMESTAMP_FB.match(line) or _TIMESTAMP_FB_POST.match(line) or _TIMESTAMP_FB_POST_EN.match(line):
             continue
 
         result.append(line)
+
+    # Fallback: if no start marker found, collect all non-UI lines before stop markers
+    if not result:
+        for raw in lines:
+            line = raw.strip()
+            if not line:
+                continue
+            if line in _STOP or line.startswith("所有心情") or line.startswith("All reactions"):
+                break
+            if line in _SKIP or _TIMESTAMP_FB.match(line) or _TIMESTAMP_FB_POST.match(line) or _TIMESTAMP_FB_POST_EN.match(line):
+                continue
+            result.append(line)
 
     return "\n".join(result).strip()[:8000]
 
@@ -210,10 +226,15 @@ _TIMESTAMP_FB = re.compile(
     r"^\d+\s*(秒|分鐘|小時|天|週|個月|年)(前)?$|^剛剛$|^\d+[smhdw]$"
 )
 
-# Group post timestamp: "4月15日下午12:41", "April 15 at 12:41 PM", etc.
+# Group post timestamp (Chinese): "4月15日下午12:41", "昨天上午9:00"
 _TIMESTAMP_FB_POST = re.compile(
     r"^\d+月\d+日|^昨天[上下]午|^今天[上下]午"
-    r"|^(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d+"
+)
+
+# Group post timestamp (English): "April 15 at 12:41 PM", "Yesterday at 3:00 PM"
+_TIMESTAMP_FB_POST_EN = re.compile(
+    r"^(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d+"
+    r"|^(Yesterday|Today) at \d+"
     r"|^\w+ \d+ at \d+:\d+"
 )
 
